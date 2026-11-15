@@ -1,16 +1,24 @@
 import { PrismaClient } from '@prisma/client'
 
-const prismaClientSingleton = () => {
+const globalForPrisma = globalThis as unknown as { prisma: PrismaClient | undefined }
+
+function createPrismaClient() {
   return new PrismaClient()
 }
 
-declare global {
-  var prismaGlobal: undefined | ReturnType<typeof prismaClientSingleton>
+function getOrCreatePrisma(): PrismaClient {
+  if (!globalForPrisma.prisma) {
+    globalForPrisma.prisma = createPrismaClient()
+  }
+  return globalForPrisma.prisma
 }
 
-const prisma = globalThis.prismaGlobal ?? prismaClientSingleton()
+// Lazy proxy — defers PrismaClient creation to the first actual DB call.
+// This prevents "Failed to collect page data" errors during `next build`.
+export const prisma = new Proxy({} as PrismaClient, {
+  get(_target, prop) {
+    return getOrCreatePrisma()[prop as keyof PrismaClient]
+  },
+})
 
-export { prisma }
 export default prisma
-
-if (process.env.NODE_ENV !== 'production') globalThis.prismaGlobal = prisma
