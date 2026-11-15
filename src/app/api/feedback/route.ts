@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { submissionSchema } from "@/lib/validations";
-
+export const dynamic = 'force-dynamic';
 export async function POST(req: NextRequest) {
   try {
     const json = await req.json();
